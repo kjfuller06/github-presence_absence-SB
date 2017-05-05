@@ -1,3 +1,5 @@
+#BASE FUNCTIONS 
+
 aggregate.data=function(dat){
   dat1=dat[order(dat$loc.id),]
   nloc=max(dat1$loc.id)
@@ -10,7 +12,7 @@ aggregate.data=function(dat){
     cond=dat1$loc.id==i
     dat.tmp=dat1[cond,-ind]
     n[i]=nrow(dat.tmp)
-    if (n[i]>1) dat.tmp=apply(dat.tmp,2,sum)
+    if (n[i]>1) dat.tmp=colSums(dat.tmp)
     if (n[i]==1) dat.tmp=as.numeric(dat.tmp)
     res[i,]=dat.tmp
   }
@@ -19,9 +21,8 @@ aggregate.data=function(dat){
   list(dat=res,loc.id=loc.id,n=n)
 }
 #----------------------------------------------
-print.adapt = function(accept1z,jump1z){
-  accept1=accept1z; jump1=jump1z; 
-  
+print.adapt = function(accept1,jump1,accept.output){
+
   for (k in 1:length(accept1)){
     z=accept1[[k]]/accept.output
     print(names(accept1)[k])
@@ -78,20 +79,6 @@ acceptMH <- function(p0,p1,x0,x1,BLOCK){   #accept for M, M-H
   
   list(x = x0, accept = accept)
 }
-#-------------------------------
-rmvnorm1=function (n, sigma, pre0.9_9994 = FALSE) 
-{
-  #   retval <- chol(sigma, pivot = TRUE)
-  #   o <- order(attr(retval, "pivot"))
-  #   retval <- retval[, o]
-  s. <- svd(sigma)
-  if (!all(s.$d >= -sqrt(.Machine$double.eps) * abs(s.$d[1]))) {
-    warning("sigma is numerically not positive definite")
-  }
-  R = t(s.$v %*% (t(s.$u) * sqrt(s.$d)))
-  retval <- matrix(rnorm(n * ncol(sigma)), nrow = n, byrow = !pre0.9_9994) %*% R
-  retval
-}
 #----------------------------
 fix.probs=function(probs){
   cond=probs<0.00001
@@ -101,30 +88,41 @@ fix.probs=function(probs){
   probs
 }
 #----------------------------
-update.phi=function(param,jump){
+get.logl=function(theta,phi,y,nmat){
+  prob=fix.probs(theta%*%phi)
+  dbinom(y,size=nmat,prob=prob,log=T)
+}
+
+#-------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------
+#FULL CONDITIONAL DISTRIBUTION FUNCTIONS 
+#----------------------------
+update.phi=function(param,jump,ncomm,nspp,y,nmat,a.phi,b.phi){
   phi.orig=phi.old=param$phi
   proposed=matrix(tnorm(nspp*ncomm,lo=0,hi=1,mu=phi.old,sig=jump),ncomm,nspp)
   
   for (i in 1:ncomm){
     phi.new=phi.old
     phi.new[i,]=proposed[i,]
-    adj=fix.MH(lo=0,hi=1,phi.old[i,],phi.new[i,],jump[i,])
+    adj=fix.MH(lo=0,hi=1,old1=phi.old[i,],new1=phi.new[i,],jump=jump[i,])
 
-    prob.old=fix.probs(param$theta%*%phi.old)
-    prob.new=fix.probs(param$theta%*%phi.new)
-    pold=colSums(dbinom(y,size=nmat,prob=prob.old,log=T))+dbeta(phi.old[i,],a.phi,b.phi,log=T)
-    pnew=colSums(dbinom(y,size=nmat,prob=prob.new,log=T))+dbeta(phi.new[i,],a.phi,b.phi,log=T)
-    k=acceptMH(pold,pnew+adj,phi.old[i,],phi.new[i,],F)
+    prob.old=get.logl(theta=param$theta,phi=phi.old,y=y,nmat=nmat)
+    prob.new=get.logl(theta=param$theta,phi=phi.new,y=y,nmat=nmat)
+    pold=colSums(prob.old)+dbeta(phi.old[i,],a.phi,b.phi,log=T)
+    pnew=colSums(prob.new)+dbeta(phi.new[i,],a.phi,b.phi,log=T)
+    k=acceptMH(p0=pold,p1=pnew+adj,x0=phi.old[i,],x1=phi.new[i,],BLOCK=F)
     phi.old[i,]=k$x
   }
   list(phi=phi.old,accept=phi.orig!=phi.old)
 }
 #-----------------------------
-update.theta=function(param,jump){
+update.theta=function(param,jump,nloc,ncomm,y,nmat,gamma){
   v.orig=v.old=param$vmat
   tmp=tnorm(nloc*(ncomm-1),lo=0,hi=1,mu=v.old[,-ncomm],sig=jump[,-ncomm])
   novos=cbind(matrix(tmp,nloc,ncomm-1),1)
-  ajuste=matrix(fix.MH(lo=0,hi=1,v.old,novos,jump),nloc,ncomm)
+  ajuste=matrix(fix.MH(lo=0,hi=1,old1=v.old,new1=novos,jump=jump),nloc,ncomm)
   
   prior.old=matrix(dbeta(v.old,1,gamma,log=T),nloc,ncomm)
   prior.new=matrix(dbeta(novos,1,gamma,log=T),nloc,ncomm)
@@ -136,15 +134,14 @@ update.theta=function(param,jump){
     theta.old=convertSBtoNormal(vmat=v.old,ncol=ncomm,nrow=nloc,prod=rep(1,nloc))
     theta.new=convertSBtoNormal(vmat=v.new,ncol=ncomm,nrow=nloc,prod=rep(1,nloc))
     
-    pold=fix.probs(theta.old%*%param$phi)
-    pnew=fix.probs(theta.new%*%param$phi)
+    pold=get.logl(theta=theta.old,phi=param$phi,y=y,nmat=nmat)
+    pnew=get.logl(theta=theta.new,phi=param$phi,y=y,nmat=nmat)
+    p1.old=rowSums(pold)
+    p1.new=rowSums(pnew)
     
-    p1.old=rowSums(dbinom(y,size=nmat,prob=pold,log=T))
-    p1.new=rowSums(dbinom(y,size=nmat,prob=pnew,log=T))
-    
-    k=acceptMH(p1.old+prior.old[,j],
-               p1.new+prior.new[,j]+ajuste[,j],
-               v.old[,j],v.new[,j],F)
+    k=acceptMH(p0=p1.old+prior.old[,j],
+               p1=p1.new+prior.new[,j]+ajuste[,j],
+               x0=v.old[,j],x1=v.new[,j],F)
     v.old[,j]=k$x
   }
   theta=convertSBtoNormal(vmat=v.old,ncol=ncomm,nrow=nloc,prod=rep(1,nloc))
