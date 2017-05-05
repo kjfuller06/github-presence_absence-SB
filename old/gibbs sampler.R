@@ -3,21 +3,21 @@ library(Rcpp)
 library(data.table)
 set.seed(4)
 
-setwd('U:\\presence absence model\\github-presence_absence-SB')
+setwd('U:\\presence absence model\\github-presence_absence-SB\\old')
 source('gibbs functions.R')
-sourceCpp('aux1.cpp')
 
-dat=read.csv('fake data y.csv',as.is=T)
+setwd('U:\\presence absence model\\github-presence_absence-SB')
+sourceCpp('aux1.cpp')
+dat1=read.csv('fake data y.csv',as.is=T)
 # setwd('U:\\presence absence model\\bbs data\\data florida')
 # dat1=read.csv('fifty edited FL.csv',as.is=T)
 
-tmp=aggregate.data(dat)
-y=tmp$dat
-loc.id=tmp$loc.id
+dat1=dat1[order(dat1$loc.id),]
+ind=which(colnames(dat1)%in%c('loc.id'))
+y=data.matrix(dat1[,-ind])
+loc.id=dat1$loc.id
 nspp=ncol(y)
 nloc=length(unique(loc.id))
-n=tmp$n
-nmat=matrix(n,nloc,nspp)
 ncomm=5
 
 #hyper-priors
@@ -48,6 +48,7 @@ accept.output=50
 
 options(warn=2)
 count=0
+
 for (i in 1:ngibbs){
   print(i)
   tmp=update.phi(param,jump1$phi)
@@ -66,10 +67,10 @@ for (i in 1:ngibbs){
   }
   
   #to assess convergence, examine logl
-  prob=fix.probs(param$theta%*%param$phi)
-  loglikel=sum(dbinom(y,size=nmat,prob=prob,log=T))+
-           sum(dbeta(param$phi,a.phi,b.phi,log=T))+
-           sum(dbeta(param$vmat[,-ncomm],1,gamma,log=T))
+  prob=fix.probs(param$theta%*%param$phi)[loc.id,]
+  loglikel=sum(dbinom(y,size=1,prob=prob,log=T))+
+    sum(dbeta(param$phi,a.phi,b.phi,log=T))+
+    sum(dbeta(param$vmat[,-ncomm],1,gamma,log=T))
   
   vec.logl[i]=loglikel
   vec.theta[i,]=param$theta

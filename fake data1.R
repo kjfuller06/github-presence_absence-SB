@@ -1,15 +1,12 @@
 rm(list=ls(all=TRUE))
 set.seed(4)
 
-setwd('U:\\gordon\\presence_absence\\ebird\\data')
-dat1=read.csv('edited data.csv',as.is=T)
-dat1=dat1[order(dat1$loc.id),]
-ind=which(colnames(dat1)%in%c('loc.id'))
-y=data.matrix(dat1[,-ind])
+nloc=1000
+nobs=3
+nspp=300
+y=matrix(NA,nloc,nspp)
 
-loc.id=dat1$loc.id
-nspp=ncol(y)
-nloc=length(unique(loc.id))
+loc.id=rep(1:nloc,each=nobs)
 ncommun=5
 
 #generate thetas
@@ -50,10 +47,9 @@ probs1=probs[loc.id,]
 
 #number of observations per location
 obs=matrix(rbinom(nrow(probs1)*ncol(probs1),size=1,prob=probs1),nrow(probs1),ncol(probs1))
-ind=which(colnames(dat1)%in%c('loc.id'))
-colnames(obs)=colnames(dat1)[-ind]
+colnames(obs)=paste('spp',1:nspp,sep='')
 obs1=cbind(obs,loc.id)
 colnames(obs1)[ncol(obs1)]='loc.id'
 
-setwd('U:\\gordon\\presence_absence\\new model')
+setwd('U:\\presence absence model\\github-presence_absence-SB')
 write.csv(obs1,'fake data y.csv',row.names=F)

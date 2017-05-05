@@ -1,24 +1,3 @@
-aggregate.data=function(dat){
-  dat1=dat[order(dat$loc.id),]
-  nloc=max(dat1$loc.id)
-  
-  ind=which(colnames(dat1)=='loc.id')
-  
-  res=matrix(NA,nloc,ncol(dat1)-1)
-  n=rep(NA,nloc)
-  for (i in 1:nloc){
-    cond=dat1$loc.id==i
-    dat.tmp=dat1[cond,-ind]
-    n[i]=nrow(dat.tmp)
-    if (n[i]>1) dat.tmp=apply(dat.tmp,2,sum)
-    if (n[i]==1) dat.tmp=as.numeric(dat.tmp)
-    res[i,]=dat.tmp
-  }
-  colnames(res)=colnames(dat1[,-ind])
-  loc.id=unique(dat1$loc.id)
-  list(dat=res,loc.id=loc.id,n=n)
-}
-#----------------------------------------------
 print.adapt = function(accept1z,jump1z){
   accept1=accept1z; jump1=jump1z; 
   
@@ -109,11 +88,11 @@ update.phi=function(param,jump){
     phi.new=phi.old
     phi.new[i,]=proposed[i,]
     adj=fix.MH(lo=0,hi=1,phi.old[i,],phi.new[i,],jump[i,])
-
-    prob.old=fix.probs(param$theta%*%phi.old)
-    prob.new=fix.probs(param$theta%*%phi.new)
-    pold=colSums(dbinom(y,size=nmat,prob=prob.old,log=T))+dbeta(phi.old[i,],a.phi,b.phi,log=T)
-    pnew=colSums(dbinom(y,size=nmat,prob=prob.new,log=T))+dbeta(phi.new[i,],a.phi,b.phi,log=T)
+    
+    prob.old=fix.probs(param$theta%*%phi.old)[loc.id,]
+    prob.new=fix.probs(param$theta%*%phi.new)[loc.id,]
+    pold=colSums(dbinom(y,size=1,prob=prob.old,log=T))+dbeta(phi.old[i,],a.phi,b.phi,log=T)
+    pnew=colSums(dbinom(y,size=1,prob=prob.new,log=T))+dbeta(phi.new[i,],a.phi,b.phi,log=T)
     k=acceptMH(pold,pnew+adj,phi.old[i,],phi.new[i,],F)
     phi.old[i,]=k$x
   }
@@ -136,11 +115,21 @@ update.theta=function(param,jump){
     theta.old=convertSBtoNormal(vmat=v.old,ncol=ncomm,nrow=nloc,prod=rep(1,nloc))
     theta.new=convertSBtoNormal(vmat=v.new,ncol=ncomm,nrow=nloc,prod=rep(1,nloc))
     
-    pold=fix.probs(theta.old%*%param$phi)
-    pnew=fix.probs(theta.new%*%param$phi)
+    #contribution from reflectance data
+    pold=fix.probs(theta.old%*%param$phi)[loc.id,]
+    pnew=fix.probs(theta.new%*%param$phi)[loc.id,]
     
-    p1.old=rowSums(dbinom(y,size=nmat,prob=pold,log=T))
-    p1.new=rowSums(dbinom(y,size=nmat,prob=pnew,log=T))
+    k=rowSums(dbinom(y,size=1,prob=pold,log=T))
+    p1.old=aggregatesum(Tobesum=k, nind=nloc, nobs=length(k), ind=loc.id) 
+    
+    # tmp=data.table(prob=rowSums(dbinom(y,size=1,prob=pold,log=T)),
+    #                loc.id=loc.id)
+    # teste=tmp[,list(prob=sum(prob)),by='loc.id']$prob
+    # plot(p1.old,teste)
+    # hist(p1.old-teste)
+    
+    k=rowSums(dbinom(y,size=1,prob=pnew,log=T))
+    p1.new=aggregatesum(Tobesum=k, nind=nloc, nobs=length(k), ind=loc.id) 
     
     k=acceptMH(p1.old+prior.old[,j],
                p1.new+prior.new[,j]+ajuste[,j],
