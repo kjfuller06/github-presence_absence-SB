@@ -53,3 +53,4 @@ colnames(obs1)[ncol(obs1)]='loc.id'
 
 setwd('U:\\presence absence model\\github-presence_absence-SB')
 write.csv(obs1,'fake data y.csv',row.names=F)
+write.csv(phi.true,'fake phi.csv',row.names=F)

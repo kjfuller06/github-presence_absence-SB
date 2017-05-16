@@ -90,7 +90,8 @@ fix.probs=function(probs){
 #----------------------------
 get.logl=function(theta,phi,y,nmat){
   prob=fix.probs(theta%*%phi)
-  dbinom(y,size=nmat,prob=prob,log=T)
+  #dbinom(y,size=nmat,prob=prob,log=T)
+  y*log(prob)+(nmat-y)*log(1-prob)
 }
 
 #-------------------------------------------------------------------------------
