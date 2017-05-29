@@ -104,16 +104,22 @@ update.phi=function(param,jump,ncomm,nspp,y,nmat,a.phi,b.phi){
   phi.orig=phi.old=param$phi
   proposed=matrix(tnorm(nspp*ncomm,lo=0,hi=1,mu=phi.old,sig=jump),ncomm,nspp)
   
+  prior.old=dbeta(phi.old ,a.phi,b.phi,log=T)
+  prior.new=dbeta(proposed,a.phi,b.phi,log=T)
+  prior.old=matrix(prior.old,ncomm,nspp)
+  prior.new=matrix(prior.new,ncomm,nspp)
+  adj=fix.MH(lo=0,hi=1,old1=phi.old,new1=proposed,jump=jump)
+  adj=matrix(adj,ncomm,nspp)
+  
   for (i in 1:ncomm){
     phi.new=phi.old
     phi.new[i,]=proposed[i,]
-    adj=fix.MH(lo=0,hi=1,old1=phi.old[i,],new1=phi.new[i,],jump=jump[i,])
 
     prob.old=get.logl(theta=param$theta,phi=phi.old,y=y,nmat=nmat)
     prob.new=get.logl(theta=param$theta,phi=phi.new,y=y,nmat=nmat)
-    pold=colSums(prob.old)+dbeta(phi.old[i,],a.phi,b.phi,log=T)
-    pnew=colSums(prob.new)+dbeta(phi.new[i,],a.phi,b.phi,log=T)
-    k=acceptMH(p0=pold,p1=pnew+adj,x0=phi.old[i,],x1=phi.new[i,],BLOCK=F)
+    pold=colSums(prob.old)+prior.old[i,]
+    pnew=colSums(prob.new)+prior.new[i,]
+    k=acceptMH(p0=pold,p1=pnew+adj[i,],x0=phi.old[i,],x1=phi.new[i,],BLOCK=F)
     phi.old[i,]=k$x
   }
   list(phi=phi.old,accept=phi.orig!=phi.old)
