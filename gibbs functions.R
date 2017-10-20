@@ -90,7 +90,6 @@ fix.probs=function(probs){
 #----------------------------
 get.logl=function(theta,phi,y,nmat){
   prob=fix.probs(theta%*%phi)
-  #dbinom(y,size=nmat,prob=prob,log=T)
   y*log(prob)+(nmat-y)*log(1-prob)
 }
 
@@ -102,14 +101,11 @@ get.logl=function(theta,phi,y,nmat){
 #----------------------------
 update.phi=function(param,jump,ncomm,nspp,y,nmat,a.phi,b.phi){
   phi.orig=phi.old=param$phi
-  proposed=matrix(tnorm(nspp*ncomm,lo=0,hi=1,mu=phi.old,sig=jump),ncomm,nspp)
   
-  prior.old=dbeta(phi.old ,a.phi,b.phi,log=T)
+  proposed=matrix(tnorm(nspp*ncomm,lo=0,hi=1,mu=phi.old,sig=jump),ncomm,nspp)
+  prior.old=dbeta(phi.old,a.phi,b.phi,log=T)
   prior.new=dbeta(proposed,a.phi,b.phi,log=T)
-  prior.old=matrix(prior.old,ncomm,nspp)
-  prior.new=matrix(prior.new,ncomm,nspp)
   adj=fix.MH(lo=0,hi=1,old1=phi.old,new1=proposed,jump=jump)
-  adj=matrix(adj,ncomm,nspp)
   
   for (i in 1:ncomm){
     phi.new=phi.old

@@ -1,13 +1,13 @@
 rm(list=ls(all=TRUE))
-set.seed(4)
+set.seed(5)
 
 nloc=1000
-nobs=3
-nspp=300
+nobs=5
+nspp=400
 y=matrix(NA,nloc,nspp)
 
 loc.id=rep(1:nloc,each=nobs)
-ncommun=5
+ncommun=10
 
 #generate thetas
 base=floor(nloc/(ncommun-2))
@@ -34,15 +34,28 @@ plot(NA,NA,xlim=c(0,nloc),ylim=c(0,1))
 for (i in 1:ncommun) lines(1:nloc,theta[,i],col=i)
 
 #generate phi's
-makesparse=matrix(rbinom(ncommun*nspp,size=1,prob=0.3),ncommun,nspp)
-phi.true=phi=matrix(runif(ncommun*nspp,min=0.5,max=1),ncommun,nspp)*makesparse
+phi=matrix(NA,ncommun,nspp)
+k=sample(c(rep(2,10),rep(1,nspp-10)),size=nspp)#some species belong to multiple communities
+table(k)
+for (i in 1:nspp){
+  tmp=c(runif(k[i],0.9,1),runif(ncommun-k[i],0,0.05))
+  phi[,i]=sample(tmp,size=ncommun)
+}
+phi.true=phi
 
 par(mfrow=c(3,2),mar=rep(1,4))
 for (i in 1:ncommun) plot(phi[i,],type='h',ylim=c(0,1))
 
 #generate data
 probs=theta%*%phi
+cond=probs<0.00001; sum(cond)
+probs[cond]=0.00001
+cond=probs>0.99999; sum(cond)
+probs[cond]=0.99999
+
+par(mfrow=c(1,1))
 hist(probs)
+image(probs)
 probs1=probs[loc.id,]
 
 #number of observations per location
@@ -53,4 +66,3 @@ colnames(obs1)[ncol(obs1)]='loc.id'
 
 setwd('U:\\presence absence model\\github-presence_absence-SB')
 write.csv(obs1,'fake data y.csv',row.names=F)
-write.csv(phi.true,'fake phi.csv',row.names=F)

@@ -1,6 +1,6 @@
 rm(list=ls(all=TRUE))
 library(Rcpp)
-set.seed(4)
+set.seed(10)
 
 setwd('U:\\presence absence model\\github-presence_absence-SB')
 source('gibbs functions.R')
@@ -8,9 +8,11 @@ source('gibbs wrapper.R')
 sourceCpp('aux1.cpp')
 
 dat=read.csv('fake data y.csv',as.is=T)
+ncomm=10
 nloc=max(dat$loc.id)
 nspp=ncol(dat)-1
-ncomm=5
-res=run.gibbs(dat=dat,ngibbs=1000,a.phi=0.01,b.phi=0.99,gamma=0.1,
-              ncomm=ncomm,nadapt=1000)
+ngibbs=1000; nadapt=ngibbs/4
+a.phi=0.1; b.phi=0.1; gamma=0.1
+
+res=run.gibbs(dat=dat,ngibbs=ngibbs,a.phi=a.phi,b.phi=b.phi,gamma=gamma,ncomm=ncomm,nadapt=nadapt)
 
