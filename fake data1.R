@@ -2,15 +2,15 @@ rm(list=ls(all=TRUE))
 set.seed(5)
 
 nloc=1000
-nobs=5
-nspp=400
+nobs=3
+nspp=200
 y=matrix(NA,nloc,nspp)
 
 loc.id=rep(1:nloc,each=nobs)
 ncommun=10
 
 #generate thetas
-base=floor(nloc/(ncommun-2))
+base=floor(nloc/(ncommun-4))
 
 x=seq(from=-1,to=1,length.out=base)
 y=sqrt(1-(x^2))*0.1
@@ -34,17 +34,13 @@ plot(NA,NA,xlim=c(0,nloc),ylim=c(0,1))
 for (i in 1:ncommun) lines(1:nloc,theta[,i],col=i)
 
 #generate phi's
-phi=matrix(NA,ncommun,nspp)
-k=sample(c(rep(2,10),rep(1,nspp-10)),size=nspp)#some species belong to multiple communities
-table(k)
-for (i in 1:nspp){
-  tmp=c(runif(k[i],0.9,1),runif(ncommun-k[i],0,0.05))
-  phi[,i]=sample(tmp,size=ncommun)
-}
+phi=matrix(rbeta(ncommun*nspp,0.8,0.8),ncommun,nspp)
+phi[,1:(ncommun*2)]=cbind(diag(1,ncommun),diag(1,ncommun)) #at least 2 species that are unique to each community
 phi.true=phi
+apply(phi>0.8,1,sum)
+table(apply(phi>0.8,2,sum))
 
-par(mfrow=c(3,2),mar=rep(1,4))
-for (i in 1:ncommun) plot(phi[i,],type='h',ylim=c(0,1))
+image(phi)
 
 #generate data
 probs=theta%*%phi

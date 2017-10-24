@@ -30,9 +30,9 @@ print.adapt = function(accept1,jump1,accept.output){
   }
   
   for (k in 1:length(jump1)){
-    cond=(accept1[[k]]/accept.output)>0.4 & jump1[[k]]<10000
+    cond=(accept1[[k]]/accept.output)>0.4 & jump1[[k]]<1
     jump1[[k]][cond] = jump1[[k]][cond]*2       
-    cond=(accept1[[k]]/accept.output)<0.2 & jump1[[k]]>0.001
+    cond=(accept1[[k]]/accept.output)<0.2 & jump1[[k]]>0.005
     jump1[[k]][cond] = jump1[[k]][cond]*0.5
     accept1[[k]][]=0
   }
