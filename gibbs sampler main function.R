@@ -3,13 +3,13 @@ library('Rcpp')
 set.seed(4)
 
 #get functions
-setwd('U:\\presence absence model\\github-presence_absence-SB')
+# setwd('U:\\presence absence model\\github-presence_absence-SB')
 source('gibbs functions.R')
 sourceCpp('aux1.cpp')
 
 #get data
-setwd('U:\\presence absence model\\simulations')
-dat=read.csv('fake data 10.csv',as.is=T)
+# setwd('U:\\presence absence model\\simulations')
+dat=read.csv('fake data.csv',as.is=T)
 tmp=aggregate.data(dat)
 y=tmp$dat
 n=tmp$n
