@@ -19,8 +19,8 @@ plot(x=seq1,y=results$llk[seq1],type='l',xlab='Iterations',ylab='Log-likel.')
 theta=matrix(colMeans(results$theta[seq1,]),nloc,10)
 phi=matrix(colMeans(results$phi[seq1,]),10,nspp)
 
-par(mfrow=c(3,1),mar=c(4,4,4,1))
-boxplot(theta,xlab='',ylab=expression(theta[lk]),names=paste('G',1:10,sep=''),
+par(mfrow=c(3,1),mar=c(3,3,3,1))
+boxplot(theta,ylab=expression(theta[lk]),names=paste('G',1:10,sep=''),
         xlab='Groups')
 plot(NA,NA,xlim=c(0,1000),ylim=c(0,1),xlab='Locations',ylab=expression(theta[lk]))
 for (i in 1:ncol(theta.true)) lines(theta.true[,i],col='grey',lwd=2)
