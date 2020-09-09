@@ -1,9 +1,8 @@
 # Fitting the model
-
 library('Rcpp')
 set.seed(4)
 #get functions
-setwd('U:\\GIT_models\\github-presence_absence-SB')
+# setwd('U:\\GIT_models\\github-presence_absence-SB')
 source('gibbs functions.R')
 source('gibbs sampler main function.R')
 sourceCpp('aux1.cpp')
@@ -15,7 +14,6 @@ seq1=1000:2000
 par(mfrow=c(2,1),mar=c(3,3,1,1))
 plot(results$llk,type='l',xlab='Iterations',ylab='Log-likel.')
 plot(x=seq1,y=results$llk[seq1],type='l',xlab='Iterations',ylab='Log-likel.')
-3
 
 #summarize
 theta=matrix(colMeans(results$theta[seq1,]),nloc,10)
